@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
-import { SuscribeImage, CloseButton as Close } from "../../assets";
-import { obtenerNoticias } from "./fakeRest";
+import { SuscribeImage } from "../../assets";
+import { INoticias, obtenerNoticias } from "./fakeRest";
 import {
-  CloseButton,
-  TarjetaModal,
-  ContenedorModal,
   DescripcionModal,
   ImagenModal,
   TituloModal,
@@ -20,6 +17,7 @@ import {
   BotonSuscribir,
   CotenedorTexto,
 } from "./styled";
+import ModalBase from "./ModalBase";
 
 export interface INoticiasNormalizadas {
   id: number;
@@ -31,101 +29,121 @@ export interface INoticiasNormalizadas {
   descripcionCorta?: string;
 }
 
+//Fer, utilize los primeros 3 principios solid, el principio de responsabilidad unica, con el use effect y El principio de abierto y cerrado junto con el principio de sustitucion de liskov para los dos tipos de modales.
+
+const obtenerNoticiasTransformadas = (noticias: Array<INoticias>) => {
+  return noticias.map((n) => {
+    const titulo = n.titulo
+      .split(" ")
+      .map((str) => {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+      })
+      .join(" ");
+
+    const ahora = new Date();
+    const minutosTranscurridos = Math.floor(
+      (ahora.getTime() - n.fecha.getTime()) / 60000
+    );
+
+    return {
+      id: n.id,
+      titulo,
+      descripcion: n.descripcion,
+      fecha: `Hace ${minutosTranscurridos} minutos`,
+      esPremium: n.esPremium,
+      imagen: n.imagen,
+      descripcionCorta: n.descripcion.substring(0, 100),
+    };
+  });
+};
+
+const ModalRegular = ({
+  noticia,
+  onClose,
+}: {
+  noticia: INoticiasNormalizadas;
+  onClose: () => void;
+}) => {
+  return (
+    <ModalBase onClose={onClose}>
+      <ImagenModal src={noticia.imagen} alt="news-image" />
+      <CotenedorTexto>
+        <TituloModal>{noticia.titulo}</TituloModal>
+        <DescripcionModal>{noticia.descripcion}</DescripcionModal>
+      </CotenedorTexto>
+    </ModalBase>
+  );
+};
+
+const ModalPremium = ({ onClose }: { onClose: () => void }) => {
+  return (
+    <ModalBase onClose={onClose}>
+      <ImagenModal src={SuscribeImage} alt="mr-burns-excellent" />
+      <CotenedorTexto>
+        <TituloModal>Suscríbete a nuestro Newsletter</TituloModal>
+        <DescripcionModal>
+          Suscríbete a nuestro newsletter y recibe noticias de nuestros
+          personajes favoritos.
+        </DescripcionModal>
+        <BotonSuscribir
+          onClick={() =>
+            setTimeout(() => {
+              alert("Suscripto!");
+              onClose();
+            }, 1000)
+          }
+        >
+          Suscríbete
+        </BotonSuscribir>
+      </CotenedorTexto>
+    </ModalBase>
+  );
+};
+
 const Noticias = () => {
   const [noticias, setNoticias] = useState<INoticiasNormalizadas[]>([]);
-  const [modal, setModal] = useState<INoticiasNormalizadas | null>(null);
+  const [modalNoticia, setModalNoticia] =
+    useState<INoticiasNormalizadas | null>(null);
+
+  const cargarNoticias = async () => {
+    const respuesta = await obtenerNoticias();
+    const noticiasTransformadas = obtenerNoticiasTransformadas(respuesta);
+    setNoticias(noticiasTransformadas);
+  };
 
   useEffect(() => {
-    const obtenerInformacion = async () => {
-      const respuesta = await obtenerNoticias();
-
-      const data = respuesta.map((n) => {
-        const titulo = n.titulo
-          .split(" ")
-          .map((str) => {
-            return str.charAt(0).toUpperCase() + str.slice(1);
-          })
-          .join(" ");
-
-        const ahora = new Date();
-        const minutosTranscurridos = Math.floor(
-          (ahora.getTime() - n.fecha.getTime()) / 60000
-        );
-
-        return {
-          id: n.id,
-          titulo,
-          descripcion: n.descripcion,
-          fecha: `Hace ${minutosTranscurridos} minutos`,
-          esPremium: n.esPremium,
-          imagen: n.imagen,
-          descripcionCorta: n.descripcion.substring(0, 100),
-        };
-      });
-
-      setNoticias(data);
-    };
-
-    obtenerInformacion();
+    cargarNoticias();
   }, []);
+
+  const openModal = (noticia: INoticiasNormalizadas) => {
+    setModalNoticia(noticia);
+  };
+
+  const closeModal = () => {
+    setModalNoticia(null);
+  };
 
   return (
     <ContenedorNoticias>
       <TituloNoticias>Noticias de los Simpsons</TituloNoticias>
       <ListaNoticias>
         {noticias.map((n) => (
-          <TarjetaNoticia>
+          <TarjetaNoticia key={n.id}>
             <ImagenTarjetaNoticia src={n.imagen} />
             <TituloTarjetaNoticia>{n.titulo}</TituloTarjetaNoticia>
             <FechaTarjetaNoticia>{n.fecha}</FechaTarjetaNoticia>
             <DescripcionTarjetaNoticia>
               {n.descripcionCorta}
             </DescripcionTarjetaNoticia>
-            <BotonLectura onClick={() => setModal(n)}>Ver más</BotonLectura>
+            <BotonLectura onClick={() => openModal(n)}>Ver más</BotonLectura>
           </TarjetaNoticia>
         ))}
-        {modal ? (
-          modal.esPremium ? (
-            <ContenedorModal>
-              <TarjetaModal>
-                <CloseButton onClick={() => setModal(null)}>
-                  <img src={Close} alt="close-button" />
-                </CloseButton>
-                <ImagenModal src={SuscribeImage} alt="mr-burns-excelent" />
-                <CotenedorTexto>
-                  <TituloModal>Suscríbete a nuestro Newsletter</TituloModal>
-                  <DescripcionModal>
-                    Suscríbete a nuestro newsletter y recibe noticias de
-                    nuestros personajes favoritos.
-                  </DescripcionModal>
-                  <BotonSuscribir
-                    onClick={() =>
-                      setTimeout(() => {
-                        alert("Suscripto!");
-                        setModal(null);
-                      }, 1000)
-                    }
-                  >
-                    Suscríbete
-                  </BotonSuscribir>
-                </CotenedorTexto>
-              </TarjetaModal>
-            </ContenedorModal>
+        {modalNoticia &&
+          (modalNoticia.esPremium ? (
+            <ModalPremium onClose={closeModal} />
           ) : (
-            <ContenedorModal>
-              <TarjetaModal>
-                <CloseButton onClick={() => setModal(null)}>
-                  <img src={Close} alt="close-button" />
-                </CloseButton>
-                <ImagenModal src={modal.imagen} alt="news-image" />
-                <CotenedorTexto>
-                  <TituloModal>{modal.titulo}</TituloModal>
-                  <DescripcionModal>{modal.descripcion}</DescripcionModal>
-                </CotenedorTexto>
-              </TarjetaModal>
-            </ContenedorModal>
-          )
-        ) : null}
+            <ModalRegular noticia={modalNoticia} onClose={closeModal} />
+          ))}
       </ListaNoticias>
     </ContenedorNoticias>
   );

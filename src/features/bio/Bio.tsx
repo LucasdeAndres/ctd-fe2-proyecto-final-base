@@ -1,6 +1,34 @@
 import { useState } from "react";
 import { NombresSimpsons, INFO_SIMPSONS } from "./constants";
-import styles from "./styles.module.css";
+import styled from "styled-components";
+import {
+  BioContainer,
+  ContenedorBotones,
+  BioImagen,
+  BioNombre,
+  BioDescripcion,
+} from "./StyledComponents";
+
+const Boton = styled.button<{ isActive: boolean }>`
+  border-radius: 5px;
+  border: 1px solid darkgray;
+  box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.75);
+  padding: 1rem;
+  margin: 1rem;
+  font-family: "Homer Simpson Revised", sans-serif;
+  font-size: 1.4rem;
+  background-color: ${(props) => (props.isActive ? "#fdd835" : "transparent")};
+  color: ${(props) => (props.isActive ? "whitesmoke" : "inherit")};
+  text-shadow: 2px 2px 0 #000000, 2px -2px 0 #000000, -2px 2px 0 #000000,
+    -2px -2px 0 #000000, 2px 0px 0 #000000, 0px 2px 0 #000000,
+    -2px 0px 0 #000000, 0px -2px 0 #000000;
+
+  &:hover {
+    cursor: pointer;
+    background-color: #fdd835;
+    color: whitesmoke;
+  }
+`;
 
 const Bio = () => {
   const [bioActiva, setBioActiva] = useState(
@@ -12,37 +40,29 @@ const Bio = () => {
 
   const crearBotones = () => {
     return Object.keys(INFO_SIMPSONS).map((nombre: string) => (
-      <button
+      <Boton
         key={nombre as string}
         onClick={() => onClick(nombre as NombresSimpsons)}
-        className={
-          bioActiva.id === nombre
-            ? styles.botonBioActivo
-            : styles.botonBioInactivo
-        }
+        isActive={bioActiva.id === nombre}
       >
         {nombre}
-      </button>
+      </Boton>
     ));
   };
 
   return (
-    <div className={styles.bioContainer}>
-      <div className={styles.contenedorBotones}>{crearBotones()}</div>
+    <BioContainer>
+      <ContenedorBotones>{crearBotones()}</ContenedorBotones>
       <div>
         <div>
-          <img
-            src={bioActiva.image}
-            alt={bioActiva.nombre}
-            className={styles.bioImagen}
-          />
+          <BioImagen src={bioActiva.image} alt={bioActiva.nombre} />
         </div>
         <div>
-          <h3 className={styles.bioNombre}>{bioActiva.nombre}</h3>
-          <p className={styles.bioDescripcion}>{bioActiva.descripcion}</p>
+          <BioNombre>{bioActiva.nombre}</BioNombre>
+          <BioDescripcion>{bioActiva.descripcion}</BioDescripcion>
         </div>
       </div>
-    </div>
+    </BioContainer>
   );
 };
 
